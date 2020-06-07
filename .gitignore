@@ -1,0 +1,11 @@
+# Python virtual env
+.env
+**/*/.env
+__pycache__
+
+# Lambda package
+src/package
+src/package.zip
+
+# IDE
+.vim
