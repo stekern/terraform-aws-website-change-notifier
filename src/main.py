@@ -15,6 +15,7 @@ import random
 import boto3
 import requests
 
+from concurrent.futures import ThreadPoolExecutor as PoolExecutor
 from datetime import datetime
 from lxml import etree, html
 from timeit import default_timer as timer
@@ -201,15 +202,18 @@ def lambda_handler(event, context):
         return
 
     timestamp = datetime.now().isoformat()
-    scraper_results = [
-        {
-            **scraper,
-            "new_elements": get_new_elements(
-                scraper, timestamp, dynamodb_table
-            ),
-        }
-        for scraper in event["scrapers"]
-    ]
+    scraper_results = []
+    with PoolExecutor(max_workers=4) as executor:
+        for res in executor.map(
+            lambda scraper: {
+                **scraper,
+                "new_elements": get_new_elements(
+                    scraper, timestamp, dynamodb_table
+                ),
+            },
+            event["scrapers"],
+        ):
+            scraper_results.append(res)
     body = get_email_body(scraper_results)
     if len(body):
         logger.info("Publishing message '%s'", body)
