@@ -10,6 +10,7 @@
 
 import logging
 import os
+import random
 
 import boto3
 import requests
@@ -143,6 +144,7 @@ def get_new_elements(scraper, current_date, dynamodb_table):
     old, and thus skipped, if an item with key (url, id) already exists in DynamoDB"""
     elements = get_elements(scraper)
     new_elements = []
+    start = timer()
     for element in elements:
         try:
             dynamodb_table.put_item(
@@ -163,11 +165,22 @@ def get_new_elements(scraper, current_date, dynamodb_table):
                 scraper["url"],
                 element["id"],
             )
+    end = timer()
+    logger.debug(
+        "Took %s seconds to query DynamoDB for '%s' elements",
+        end - start,
+        len(elements),
+    )
     logger.info("%s new elements found", len(new_elements))
     return new_elements
 
 
 def lambda_handler(event, context):
+    # Enable debug logging for 10% of executions
+    debug_logging = random.random() < 0.1
+    if debug_logging:
+        logger.info("Enabling debug logging")
+        logger.setLevel(logging.DEBUG)
     dynamodb_table_name = os.environ["DYNAMODB_TABLE_NAME"]
     sns_topic_arn = os.environ["SNS_TOPIC_ARN"]
     dynamodb = boto3.resource("dynamodb")
