@@ -60,19 +60,38 @@ def massage_obj(obj, attributes=[]):
         if type(val) == list:
             new_val = separator.join(str(v) for v in val)
             if not all(filter_fn(str(v), attribute) for v in val):
-                logger.info(
-                    "One or more values '%s' did not match attribute pattern(s)",
+                logger.warn(
+                    "One or more values '%s' did not satisfy attribute pattern(s)",
                     val,
                 )
                 return {}
+            elif attribute.get("required", False) and not len(val):
+                logger.warn(
+                    "Attribute '%s' required a non-empty value, but value was an empty list",
+                    key,
+                )
+                return {}
+
         else:
             new_val = str(val)
             if not filter_fn(new_val, attribute):
-                logger.info(
-                    "Value '%s' did not match attribute pattern(s)", new_val
+                logger.warn(
+                    "Value '%s' did not match satisfy pattern(s)", new_val
+                )
+                return {}
+            elif attribute.get("required", False) and val == "":
+                logger.warn(
+                    "Attribute '%s' required a non-empty value, but value was an empty string",
+                    key,
                 )
                 return {}
         new[key] = new_val
+    if not new["id"]:
+        logger.warn(
+            "Attribute 'id' required a non-empty value, but value was '%s'",
+            new["id"],
+        )
+        return {}
     return new
 
 
@@ -176,6 +195,20 @@ def get_new_elements(scraper, current_date, dynamodb_table):
     return new_elements
 
 
+def get_valid_scrapers(scrapers):
+    """Return a list of valid scrapers"""
+    valid_scrapers = []
+    for scraper in scrapers:
+        if "id" in list(map(lambda attr: attr["name"], scraper["attributes"])):
+            valid_scrapers.append(scraper)
+        else:
+            logger.warn(
+                "Skipping scraper with URL '%s' as the 'id' attribute is missing",
+                scraper["url"],
+            )
+    return valid_scrapers
+
+
 def lambda_handler(event, context):
     # Enable debug logging for 10% of executions
     debug_logging = random.random() < 0.1
@@ -202,6 +235,7 @@ def lambda_handler(event, context):
         return
 
     timestamp = datetime.now().isoformat()
+    scrapers = get_valid_scrapers(event.get("scrapers", []))
     scraper_results = []
     with PoolExecutor(max_workers=4) as executor:
         for res in executor.map(
@@ -211,7 +245,7 @@ def lambda_handler(event, context):
                     scraper, timestamp, dynamodb_table
                 ),
             },
-            event["scrapers"],
+            scrapers,
         ):
             scraper_results.append(res)
     body = get_email_body(scraper_results)
@@ -222,3 +256,4 @@ def lambda_handler(event, context):
         )
     else:
         logger.info("No messages to publish")
+    return {"scraper_results": scraper_results}

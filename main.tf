@@ -68,8 +68,8 @@ resource "aws_iam_role_policy" "dynamodb_to_lambda" {
 
 resource "aws_cloudwatch_event_rule" "this" {
   # TODO: Hard-coded time based on GMT
-  schedule_expression = "cron(0 11 ? * MON-SUN *)"
-  description         = "Scrape websites daily at 1 pm"
+  schedule_expression = var.schedule_expression
+  description         = "Trigger Lambda function that scrapes websites"
 }
 
 resource "aws_cloudwatch_event_target" "this" {
