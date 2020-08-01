@@ -1,0 +1,30 @@
+name: Package Python application
+
+on:
+  push:
+    branches: [master, develop]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install dependencies
+        run: |
+          cd src
+          python -m pip install --upgrade pip
+          pip install -r requirements-cloud.txt -t /tmp/package
+      - name: Package files
+        run: |
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions"
+
+          cp src/main.py /tmp/package
+          (cd /tmp/package && zip -r "$GITHUB_WORKSPACE/src/release.zip" .)
+          git add src/release.zip
+          git commit -m "[release] Release based on commit ${GITHUB_SHA::7}"
+          git push

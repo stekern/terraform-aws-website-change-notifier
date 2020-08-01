@@ -3,8 +3,5 @@
 **/*/.env
 __pycache__
 
-# Lambda package
-src/package.zip
-
 # IDE
 .vim

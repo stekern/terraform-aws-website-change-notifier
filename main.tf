@@ -6,32 +6,6 @@ locals {
   current_region     = data.aws_region.current.name
 }
 
-resource "null_resource" "lambda_package" {
-  triggers = {
-    source       = base64sha256(file("${path.module}/src/main.py"))
-    requirements = base64sha256(file("${path.module}/src/requirements-cloud.txt"))
-  }
-  provisioner "local-exec" {
-    command     = "rm -rf ./package/* && pip install -r requirements-cloud.txt -t ./package && cp ./main.py ./package"
-    working_dir = "${path.module}/src"
-  }
-}
-
-data "null_data_source" "wait_for_lambda_package" {
-  inputs = {
-    # Wait for null_resource
-    wait_id = "${null_resource.lambda_package.id}"
-    # Make archive_file depend on current resource
-    source_dir = "${path.module}/src/package"
-  }
-}
-
-data "archive_file" "this" {
-  type        = "zip"
-  source_dir  = data.null_data_source.wait_for_lambda_package.outputs.source_dir
-  output_path = "${path.module}/src/package.zip"
-}
-
 resource "aws_dynamodb_table" "this" {
   name         = "${var.name_prefix}-website-elements"
   billing_mode = "PAY_PER_REQUEST"
@@ -54,8 +28,8 @@ resource "aws_lambda_function" "this" {
   handler          = "main.lambda_handler"
   role             = aws_iam_role.this.arn
   runtime          = "python3.7"
-  filename         = data.archive_file.this.output_path
-  source_code_hash = data.archive_file.this.output_base64sha256
+  filename         = "${path.module}/src/release.zip"
+  source_code_hash = filebase64sha256("${path.module}/src/release.zip")
   environment {
     variables = {
       DYNAMODB_TABLE_NAME = aws_dynamodb_table.this.name
