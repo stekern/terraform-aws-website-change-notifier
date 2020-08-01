@@ -235,6 +235,7 @@ def lambda_handler(event, context):
         return
 
     timestamp = datetime.now().isoformat()
+    scrapers = get_valid_scrapers(event.get("scrapers", []))
     scraper_results = []
     with PoolExecutor(max_workers=4) as executor:
         for res in executor.map(
@@ -244,7 +245,7 @@ def lambda_handler(event, context):
                     scraper, timestamp, dynamodb_table
                 ),
             },
-            event["scrapers"],
+            scrapers,
         ):
             scraper_results.append(res)
     body = get_email_body(scraper_results)
