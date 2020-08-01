@@ -1,0 +1,23 @@
+{
+  "notify_email": "<email-address>",
+  "scrapers": [
+    {
+      "url": "https://www.beatport.com/releases/all?per-page=100",
+      "element_xpath": "//ul[contains(@class, 'bucket-items') and contains(@class, 'ec-bucket')]/li",
+      "attributes": [
+        {
+          "name": "id",
+          "xpath": "./@data-ec-id"
+        },
+        {
+          "name": "title",
+          "xpath": ".//p[@class='buk-horz-release-title']/a/text()"
+        },
+        {
+          "name": "artist",
+          "xpath": ".//p[@class='buk-horz-release-artists']/a/text()"
+        }
+      ]
+    }
+  ]
+}

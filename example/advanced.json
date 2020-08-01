@@ -1,0 +1,38 @@
+{
+  "notify_email": "<email-address>",
+  "scrapers": [
+    {
+      "url": "https://www.beatport.com/releases/all?per-page=100",
+      "element_xpath": "//ul[contains(@class, 'bucket-items') and contains(@class, 'ec-bucket')]/li",
+      "min_num_elements": 100,
+      "max_num_elements": 100,
+      "email_format": [
+        {
+          "name": "title"
+        },
+        " - ",
+        {
+          "name": "artist"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "id",
+          "xpath": "./@data-ec-id"
+        },
+        {
+          "name": "title",
+          "required": true,
+          "xpath": ".//p[@class='buk-horz-release-title']/a/text()"
+        },
+        {
+          "name": "artist",
+          "required": true,
+          "separator": ", ",
+          "patterns": [{"exclude": true, "pattern": "David Guetta"}],
+          "xpath": ".//p[@class='buk-horz-release-artists']/a/text()"
+        }
+      ]
+    }
+  ]
+}
