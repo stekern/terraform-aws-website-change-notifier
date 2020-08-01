@@ -256,3 +256,4 @@ def lambda_handler(event, context):
         )
     else:
         logger.info("No messages to publish")
+    return {"scraper_results": scraper_results}
